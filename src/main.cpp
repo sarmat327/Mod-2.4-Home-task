@@ -1,21 +1,29 @@
 
+/*
+Завдання 4: Polling + debounce (без interrupts)
+Прибрати interrupt повністю
+Опитувати кнопку кожні 5–10 мс
+Реалізувати debounce як машину станів
+Очікуваний результат
+
+Найстабільніша поведінка
+Трохи більша затримка реакції
+*/
+
 #include <Arduino.h>
 
-// Hardware configuration
-#define BUTTON_PIN       15
+#define PIN_IN       15
 
-// Timing configuration
 #define POLLING_INTERVAL 5
 #define DEBOUNCE_TIME    50
 
-// Button states
+// Button states machine
 enum ButtonState : uint8_t
 {
     RELEASED,
     PRESSED
 };
 
-// Button variables
 ButtonState buttonState = RELEASED;
 
 uint32_t lastPollingTime = 0;
@@ -31,24 +39,22 @@ void setup()
 {
     Serial.begin(115200);
 
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
+    pinMode(PIN_IN, INPUT_PULLUP);
+    Serial.println(digitalRead(PIN_IN));
 
     Serial.println("SETUP DONE");
 }
 
 void buttonTask(uint32_t now)
 {
-    // Read physical button state
-    rawState = digitalRead(BUTTON_PIN);
+    rawState = digitalRead(PIN_IN);
 
-    // Detect raw state change
     if (rawState != lastRawState)
     {
         lastDebounceTime = now;
         lastRawState = rawState;
     }
 
-    // Check if state is stable
     if (now - lastDebounceTime >= DEBOUNCE_TIME)
     {
         // State machine
@@ -59,15 +65,9 @@ void buttonTask(uint32_t now)
                 if (rawState == LOW)
                 {
                     buttonState = PRESSED;
-
                     counter++;
-
                     Serial.println("BUTTON PRESSED");
-
-                    Serial.printf(
-                        "COUNTER: %lu\n",
-                        (unsigned long)counter
-                    );
+                    Serial.printf("COUNTER: %d \n", counter);
                 }
 
                 break;
@@ -78,7 +78,6 @@ void buttonTask(uint32_t now)
                 if (rawState == HIGH)
                 {
                     buttonState = RELEASED;
-
                     Serial.println("BUTTON RELEASED");
                 }
 
@@ -89,7 +88,7 @@ void buttonTask(uint32_t now)
 
 void loop()
 {
-    uint32_t now = millis();
+    uint32_t now = esp_timer_get_time();
 
     // Polling every 5 ms
     if (now - lastPollingTime >= POLLING_INTERVAL)
