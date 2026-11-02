@@ -1,12 +1,13 @@
 /*
-Завдання 2: Software debounce через таймер (time-based)
-Додати debounce на основі часу:
-ігнорувати interrupt, якщо з моменту попереднього пройшло < 50 мс
-Реалізувати поза ISR
+Завдання 3: Debounce через перевірку рівня (state-based)
+Interrupt лише сигналізує “подія”
+У loop() / task:
+приймати подію лише якщо кнопка досі натиснута
+ігнорувати події при відпусканні
 Очікуваний результат
 
-Менше хибних спрацювань
-Все ще можливі спрацювання при відпусканні
+Рівно 1 реакція на 1 натискання
+Release не викликає дії
 */
 
 #include <Arduino.h>
@@ -20,10 +21,7 @@ volatile bool interruptFlag = false;
 
 void IRAM_ATTR buttonISR()
 {
-    if(esp_timer_get_time()-lastTimeChanged >= PERIOD_MS && !interruptFlag){
-      interruptFlag = true;
-      lastTimeChanged = esp_timer_get_time();
-    } 
+    interruptFlag = true;
 }
 
 void setup(){
@@ -41,7 +39,7 @@ void setup(){
 
 
 void loop(){
-  if(interruptFlag){
+  if(interruptFlag && digitalRead(PIN_IN)){
     interruptFlag = false;
     counter++;
     Serial.println("BUTTON was PRESSED");
